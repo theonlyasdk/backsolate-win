@@ -8,7 +8,7 @@ namespace Backsolate
     {
         private Bitmap originalImage;
         private Bitmap? processedImage;
-        
+
         static string modelUrl = "https://github.com/danielgatis/rembg/releases/download/v0.0.0/u2net.onnx";
         string modelPath = Path.Combine(Application.StartupPath, Path.GetFileName(modelUrl));
         string selectedModel = "u2net";
@@ -39,7 +39,6 @@ namespace Backsolate
                 {
                     lblInfoText.Text = "Downloading model...";
 
-                    // Send an asynchronous request to download the file
                     using (var response = await client.GetAsync(url, HttpCompletionOption.ResponseHeadersRead))
                     {
                         response.EnsureSuccessStatusCode();
@@ -51,23 +50,20 @@ namespace Backsolate
                         {
                             byte[] buffer = new byte[8192];
                             int bytesRead;
-                            DateTime startTime = DateTime.Now; // Start time for speed calculation
+                            DateTime startTime = DateTime.Now;
 
                             while ((bytesRead = await stream.ReadAsync(buffer, 0, buffer.Length)) > 0)
                             {
                                 await fs.WriteAsync(buffer, 0, bytesRead);
                                 receivedBytes += bytesRead;
 
-                                // Calculate elapsed time
                                 TimeSpan elapsedTime = DateTime.Now - startTime;
 
-                                // Update progress
                                 if (totalBytes > 0)
                                 {
                                     int progressPercentage = (int)(receivedBytes * 100 / totalBytes);
                                     progressBar.Value = progressPercentage;
 
-                                    // Calculate speed in bytes per second
                                     double speed = receivedBytes / elapsedTime.TotalSeconds;
                                     lblInfoText.Text = $"Downloading model... ({FormatFileSize(receivedBytes)}/{FormatFileSize(totalBytes)}) [{progressPercentage}%] Speed: {FormatFileSize((long)speed)}/s";
                                     Update();
@@ -97,26 +93,18 @@ namespace Backsolate
 
                 modelPath = Path.Combine(Application.StartupPath, Path.GetFileName(modelUrl));
 
-                // Download the model asynchronously
                 await DownloadModelAsync(modelUrl, modelPath);
 
-                // Start the stopwatch to measure elapsed time
                 Stopwatch stopwatch = Stopwatch.StartNew();
 
-                // Process the image
                 progressBar.Value = 0;
-
-                // Await the RemoveBackgroundAsync method
                 processedImage = await RemoveBackgroundAsync(originalImage);
                 pictureBoxProcessed.Image = processedImage;
 
-                // Stop the stopwatch
                 stopwatch.Stop();
 
-                // Get the elapsed time
                 TimeSpan elapsedTime = stopwatch.Elapsed;
 
-                // Format the elapsed time as a string
                 string elapsedTimeString = string.Format("{0:00}:{1:00}:{2:00}.{3:00}",
                     elapsedTime.Hours, elapsedTime.Minutes, elapsedTime.Seconds, elapsedTime.Milliseconds / 10);
 
@@ -129,7 +117,7 @@ namespace Backsolate
             }
             finally
             {
-                btnRemoveBackground.Enabled = true; // Ensure the button is re-enabled in the finally block
+                btnRemoveBackground.Enabled = true;
                 modelSelect.Enabled = true;
             }
         }
@@ -137,14 +125,12 @@ namespace Backsolate
         private void ShowUpdate(string msg, int pbIncrement)
         {
             lblInfoText.Text = msg;
-            // Update the step value here according to the steps in processing pipeline
             progressBar.Value += pbIncrement;
             Update();
         }
 
         private async void RedownloadModelAsk()
         {
-            // Generic exception handler
             var result = MessageBox.Show(
                 "Would you like to redownload the model? The current model file may be corrupt.",
                 "Unexpected Error", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
@@ -154,7 +140,6 @@ namespace Backsolate
                 lblInfoText.Text = "Attempting to download the model again...";
                 try
                 {
-                    // Download the model asynchronously
                     await DownloadModelAsync(modelUrl, modelPath);
                     lblInfoText.Text = "Model downloaded successfully!";
                 }
@@ -171,7 +156,6 @@ namespace Backsolate
             {
                 ShowUpdate($"Preparing model session ({selectedModel})...", 0);
 
-                // Run the ONNX model inference in a separate task to avoid blocking the UI
                 return await Task.Run(() =>
                 {
                     using var session = new InferenceSession(modelPath);
@@ -226,28 +210,23 @@ namespace Backsolate
                 progressBar.Value = 0;
             }
 
-            // Return the original image if the process fails
-            return image; // Return the original image if the process fails
+            return image;
         }
 
         private DenseTensor<float> PreprocessImage(Bitmap image)
         {
-            // Resize and normalize the image
-            int width, height;
+            int size = ModelCatalog.ModelPreferredSize[selectedModel];
+            Bitmap resizedImage = new Bitmap(image, new Size(size, size));
+            DenseTensor<float> tensor = new DenseTensor<float>(new[] { 1, 3, size, size });
 
-            width = height = ModelCatalog.ModelPreferredSize[selectedModel];
-
-            Bitmap resizedImage = new Bitmap(image, new Size(width, height));
-            DenseTensor<float> tensor = new DenseTensor<float>(new[] { 1, 3, height, width });
-
-            for (int y = 0; y < height; y++)
+            for (int y = 0; y < size; y++)
             {
-                for (int x = 0; x < width; x++)
+                for (int x = 0; x < size; x++)
                 {
                     Color pixel = resizedImage.GetPixel(x, y);
-                    tensor[0, 0, y, x] = pixel.R / 255f; // Red channel
-                    tensor[0, 1, y, x] = pixel.G / 255f; // Green channel
-                    tensor[0, 2, y, x] = pixel.B / 255f; // Blue channel
+                    tensor[0, 0, y, x] = pixel.R / 255f;
+                    tensor[0, 1, y, x] = pixel.G / 255f;
+                    tensor[0, 2, y, x] = pixel.B / 255f;
                 }
             }
 
@@ -256,12 +235,9 @@ namespace Backsolate
 
         private float[,] PostprocessMask(Tensor<float> mask, int originalWidth, int originalHeight)
         {
-            var maskData = mask.ToArray(); // Convert the mask to a regular array for easier manipulation
-
-            // Resize the mask to the original image size
+            var maskData = mask.ToArray();
             var resizedMask = new float[originalHeight, originalWidth];
 
-            // Simple nearest-neighbor resizing logic (for simplicity)
             float scaleX = (float)mask.Dimensions[3] / originalWidth;
             float scaleY = (float)mask.Dimensions[2] / originalHeight;
 
@@ -278,7 +254,6 @@ namespace Backsolate
             return resizedMask;
         }
 
-
         private Bitmap ApplyMask(Bitmap image, float[,] mask)
         {
             Bitmap result = new Bitmap(image.Width, image.Height);
@@ -288,8 +263,6 @@ namespace Backsolate
                 {
                     Color pixel = image.GetPixel(x, y);
                     float alpha = mask[y, x];
-
-                    // If alpha is 0, make the pixel transparent
                     result.SetPixel(x, y, Color.FromArgb((int)(alpha * 255), pixel.R, pixel.G, pixel.B));
                 }
             }
@@ -334,6 +307,7 @@ namespace Backsolate
                 }
             }
         }
+
         private void pictureBoxOriginal_Click(object sender, EventArgs e)
         {
             OpenImageFile();
@@ -411,7 +385,8 @@ namespace Backsolate
                 modelSelect.Text = e.ClickedItem?.Text;
                 selectedModel = e.ClickedItem.Text ?? "u2net";
                 modelUrl = ModelCatalog.Models[selectedModel];
-            } catch (NullReferenceException ex)
+            }
+            catch (NullReferenceException ex)
             {
                 lblInfoText.Text = "Unable to select model: " + ex.Message;
             }

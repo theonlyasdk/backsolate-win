@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace Backsolate
+﻿namespace Backsolate
 {
     public class ModelCatalog
     {
@@ -27,21 +21,21 @@ namespace Backsolate
         };
 
         public static Dictionary<string, int> ModelPreferredSize = new Dictionary<string, int>
-    {
-        { "u2net", 320 },
-        { "u2netp", 320 },
-        { "u2net_human_seg", 320 },
-        { "u2net_cloth_seg", 320 },
-        { "silueta", 320 },
-        { "isnet-general-use", 1024 },
-        { "isnet-anime", 1024 },
-        { "birefnet-general", 1024 },
-        { "birefnet-general-lite", 256},
-        { "birefnet-portrait", 512 },
-        { "birefnet-dis", 640 },
-        { "birefnet-hrsod", 640},
-        { "birefnet-cod", 640},
-        { "birefnet-massive", 640 }
-    };
+        {
+            { "u2net", 320 },
+            { "u2netp", 320 },
+            { "u2net_human_seg", 320 },
+            { "u2net_cloth_seg", 320 },
+            { "silueta", 320 },
+            { "isnet-general-use", 1024 },
+            { "isnet-anime", 1024 },
+            { "birefnet-general", 1024 },
+            { "birefnet-general-lite", 256},
+            { "birefnet-portrait", 512 },
+            { "birefnet-dis", 640 },
+            { "birefnet-hrsod", 640},
+            { "birefnet-cod", 640},
+            { "birefnet-massive", 640 }
+        };
     }
 }
