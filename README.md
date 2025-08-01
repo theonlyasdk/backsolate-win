@@ -2,7 +2,7 @@
 Image subject isolation/background removal using CNNs on-device (WinForms frontend)
 
 ## What is it?
-Backsolate is a frontend for several models specializing in detecting subjects in images. This app allows you to use those models to remove backgrounds from the images you input.
+Backsolate is a frontend for several models specializing in detecting subjects in images. This app allows you to use those models to remove backgrounds from the images you select.
 
 ## How to use it?
 - Download the latest version from the releases.
